@@ -1,0 +1,39 @@
+services:
+  postgis:
+    image: postgis/postgis:latest
+    container_name: rsn_postgis
+    ports:
+      - "2410:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1234
+    volumes:
+      - ./postgis:/docker-entrypoint-initdb.d
+    restart: always
+
+  backend:
+    build: ./backend
+    container_name: rsn_api
+    ports:
+      - "2456:3000"
+    depends_on:
+      - postgis
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    command: sh -c "npm install && npx nodemon server.js"
+    restart: always
+
+frontend:
+    image: node:latest
+    container_name: rsn
+    working_dir: /app
+    ports:
+      - "2400:3000"
+    volumes:
+      - ./frontend:/app
+    command: sh -c "npm install && npm install -g nodemon && nodemon"
+    restart: always
+
+volumes:
+  postgis_data:
