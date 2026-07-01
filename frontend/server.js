@@ -1,5 +1,6 @@
 require('dotenv').config({ path: __dirname + '/.env' });
 const express = require('express');
+const path = require("path");
 const { Pool } = require('pg');
 const cors = require('cors');
 
@@ -51,7 +52,7 @@ app.get('/CCTV_locations', async (req, res) => {
         COALESCE(t.province, 'Unknown') as province
       FROM public.pollution_data p
       LEFT JOIN (
-        SELECT DISTINCT ON (station_id) station_id, province 
+        SELECT DISTINCT ON (station_id) station_id, province
         FROM public.traffic_data
       ) t ON p.station_id = t.station_id
     `;
@@ -152,18 +153,18 @@ app.get('/forecast_pollution', async (req, res) => {
 
         // Get the most recent 14 days of daily averages for this station
         const query = `
-            SELECT 
+            SELECT
                 date::text,
-                AVG(co) as co, 
-                AVG(no2) as no2, 
-                AVG(o3) as o3, 
-                AVG(so2) as so2, 
-                AVG(pm25) as pm25, 
+                AVG(co) as co,
+                AVG(no2) as no2,
+                AVG(o3) as o3,
+                AVG(so2) as so2,
+                AVG(pm25) as pm25,
                 AVG(pm10) as pm10
-            FROM public.pollution_data 
-            WHERE station_id = $1 
-            GROUP BY date 
-            ORDER BY date DESC 
+            FROM public.pollution_data
+            WHERE station_id = $1
+            GROUP BY date
+            ORDER BY date DESC
             LIMIT 14
         `;
 
@@ -220,6 +221,19 @@ app.get('/forecast_pollution', async (req, res) => {
         console.error(err);
         res.status(500).json({ error: 'Internal server error' });
     }
+});
+
+const staticPath = path.join(__dirname, "www");
+
+app.use(express.static(staticPath));
+app.use("/rsn", express.static(staticPath));
+
+app.get(["/", "/rsn", "/rsn/"], (req, res) => {
+    res.sendFile(path.join(staticPath, "index.html"));
+});
+
+app.get("/rsn/*", (req, res) => {
+    res.sendFile(path.join(staticPath, "index.html"));
 });
 
 app.listen(port, () => {
